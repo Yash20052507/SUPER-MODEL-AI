@@ -7,12 +7,6 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
 
-import { connectDatabases } from './config/database';
-import { logger } from './config/logger';
-import { errorHandler } from './middleware/errorHandler';
-import { rateLimiter } from './middleware/rateLimiter';
-import { authMiddleware } from './middleware/auth';
-
 // Import routes
 import authRoutes from './routes/auth';
 import skillPackRoutes from './routes/skillPacks';
@@ -20,14 +14,6 @@ import aiRoutes from './routes/ai';
 import marketplaceRoutes from './routes/marketplace';
 import userRoutes from './routes/users';
 import analyticsRoutes from './routes/analytics';
-
-// Import services
-import { SkillPackService } from './services/SkillPackService';
-import { AIController } from './services/AIController';
-import { VectorStoreService } from './services/VectorStoreService';
-import { CacheService } from './services/CacheService';
-import { BackgroundJobService } from './services/BackgroundJobService';
-import { SocketService } from './services/SocketService';
 
 // Load environment variables
 dotenv.config();
@@ -56,10 +42,10 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Compression and logging
 app.use(compression());
-app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
+app.use(morgan('combined'));
 
-// Rate limiting
-app.use('/api', rateLimiter);
+// Serve static files
+app.use(express.static('public'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -68,111 +54,175 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     memory: process.memoryUsage(),
-    version: process.env.npm_package_version || '1.0.0'
+    version: process.env.npm_package_version || '1.0.0',
+    message: 'SuperModel AI Backend is running!'
+  });
+});
+
+// API Documentation endpoint
+app.get('/', (req, res) => {
+  res.json({
+    name: 'SuperModel AI Backend',
+    version: '1.0.0',
+    description: 'A modular, self-evolving AI system with dynamic skill pack loading',
+    endpoints: {
+      health: 'GET /health',
+      auth: {
+        base: '/api/auth',
+        endpoints: [
+          'GET /api/auth/me - Authentication info and demo credentials',
+          'POST /api/auth/login - Login (demo@supermodel.ai / demo123)',
+          'POST /api/auth/register - Register new user',
+          'POST /api/auth/logout - Logout user'
+        ]
+      },
+      ai: {
+        base: '/api/ai',
+        endpoints: [
+          'GET /api/ai - AI capabilities and demo requests',
+          'POST /api/ai/process - Process AI request with skill pack loading',
+          'GET /api/ai/session/:id - Get session information',
+          'GET /api/ai/skill-packs - List loaded skill packs',
+          'GET /api/ai/stats - AI controller statistics'
+        ]
+      },
+      skillPacks: {
+        base: '/api/skill-packs',
+        endpoints: [
+          'GET /api/skill-packs - List all skill packs',
+          'GET /api/skill-packs/:id - Get specific skill pack',
+          'POST /api/skill-packs - Create new skill pack',
+          'GET /api/skill-packs/meta/stats - Skill pack statistics'
+        ]
+      },
+      marketplace: {
+        base: '/api/marketplace',
+        endpoints: [
+          'GET /api/marketplace - Marketplace overview',
+          'GET /api/marketplace/packs - Browse marketplace',
+          'POST /api/marketplace/packs/:id/install - Install skill pack'
+        ]
+      },
+      users: {
+        base: '/api/users',
+        endpoints: [
+          'GET /api/users/profile - User profile',
+          'GET /api/users/stats - User statistics'
+        ]
+      },
+      analytics: {
+        base: '/api/analytics',
+        endpoints: [
+          'GET /api/analytics/overview - System overview',
+          'GET /api/analytics/performance - Performance metrics'
+        ]
+      }
+    },
+    demoCredentials: {
+      user: { email: 'demo@supermodel.ai', password: 'demo123' },
+      admin: { email: 'admin@supermodel.ai', password: 'admin123' }
+    },
+    features: [
+      'Dynamic skill pack loading',
+      'Multi-model AI support',
+      'Intelligent resource management',
+      'Session-based context preservation',
+      'Cost optimization through targeted loading',
+      'Real-time WebSocket communication',
+      'Comprehensive analytics and monitoring'
+    ]
   });
 });
 
 // API routes
 app.use('/api/auth', authRoutes);
-app.use('/api/skill-packs', authMiddleware, skillPackRoutes);
-app.use('/api/ai', authMiddleware, aiRoutes);
-app.use('/api/marketplace', authMiddleware, marketplaceRoutes);
-app.use('/api/users', authMiddleware, userRoutes);
-app.use('/api/analytics', authMiddleware, analyticsRoutes);
-
-// Error handling middleware
-app.use(errorHandler);
+app.use('/api/skill-packs', skillPackRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/marketplace', marketplaceRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
-  res.status(404).json({ message: 'Route not found' });
-});
-
-// Initialize services
-async function initializeServices() {
-  try {
-    logger.info('Initializing SuperModel AI services...');
-    
-    // Connect to databases
-    await connectDatabases();
-    
-    // Initialize core services
-    const cacheService = new CacheService();
-    const vectorStoreService = new VectorStoreService();
-    const skillPackService = new SkillPackService(vectorStoreService, cacheService);
-    const aiController = new AIController(skillPackService, vectorStoreService, cacheService);
-    const socketService = new SocketService(io);
-    
-    // Initialize background job service
-    if (process.env.ENABLE_BACKGROUND_JOBS === 'true') {
-      const backgroundJobService = new BackgroundJobService();
-      await backgroundJobService.initialize();
+  res.status(404).json({ 
+    success: false,
+    error: {
+      code: 'NOT_FOUND',
+      message: `Route ${req.originalUrl} not found`,
+      availableRoutes: [
+        'GET /',
+        'GET /health',
+        'GET /api/auth/me',
+        'GET /api/ai',
+        'GET /api/skill-packs',
+        'GET /api/marketplace',
+        'GET /api/users',
+        'GET /api/analytics'
+      ]
     }
-    
-    // Make services globally available
-    app.set('services', {
-      skillPackService,
-      aiController,
-      vectorStoreService,
-      cacheService,
-      socketService,
-    });
-    
-    logger.info('All services initialized successfully');
-    
-  } catch (error) {
-    logger.error('Failed to initialize services:', error);
-    process.exit(1);
-  }
-}
-
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, shutting down gracefully...');
-  
-  server.close(() => {
-    logger.info('HTTP server closed');
-    process.exit(0);
   });
 });
 
-process.on('SIGINT', async () => {
-  logger.info('SIGINT received, shutting down gracefully...');
+// Error handling middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Error occurred:', err);
   
-  server.close(() => {
-    logger.info('HTTP server closed');
-    process.exit(0);
+  res.status(err.statusCode || 500).json({
+    success: false,
+    error: {
+      code: err.code || 'INTERNAL_SERVER_ERROR',
+      message: err.message || 'An unexpected error occurred',
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    },
+  });
+});
+
+// Initialize WebSocket
+io.on('connection', (socket) => {
+  console.log(`Client connected: ${socket.id}`);
+  
+  socket.emit('welcome', {
+    message: 'Connected to SuperModel AI',
+    features: ['Real-time AI processing', 'Live skill pack updates', 'Session synchronization']
+  });
+  
+  socket.on('disconnect', () => {
+    console.log(`Client disconnected: ${socket.id}`);
   });
 });
 
 // Start server
-async function startServer() {
-  try {
-    await initializeServices();
-    
-    server.listen(PORT, () => {
-      logger.info(`SuperModel AI Backend running on port ${PORT}`);
-      logger.info(`Environment: ${process.env.NODE_ENV}`);
-      logger.info(`Health check: http://localhost:${PORT}/health`);
-    });
-    
-  } catch (error) {
-    logger.error('Failed to start server:', error);
-    process.exit(1);
-  }
-}
-
-// Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
-  logger.error('Uncaught exception:', error);
-  process.exit(1);
+server.listen(PORT, () => {
+  console.log(`🚀 SuperModel AI Backend running on port ${PORT}`);
+  console.log(`\n🌐 DEMO PREVIEW:`);
+  console.log(`   Interactive Demo: http://localhost:${PORT}/`);
+  console.log(`   API Documentation: http://localhost:${PORT}/`);
+  console.log(`   Health Check: http://localhost:${PORT}/health`);
+  console.log(`\n🤖 CORE ENDPOINTS:`);
+  console.log(`   AI Controller: http://localhost:${PORT}/api/ai`);
+  console.log(`   Skill Packs: http://localhost:${PORT}/api/skill-packs`);
+  console.log(`   Marketplace: http://localhost:${PORT}/api/marketplace`);
+  console.log(`   Users: http://localhost:${PORT}/api/users`);
+  console.log(`   Analytics: http://localhost:${PORT}/api/analytics`);
+  console.log(`   Authentication: http://localhost:${PORT}/api/auth/me`);
+  console.log(`\n🎯 Ready to demonstrate SuperModel AI capabilities!`);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled rejection at:', promise, 'reason:', reason);
-  process.exit(1);
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
 });
 
-startServer();
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully...');
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+});
 
 export default app;
