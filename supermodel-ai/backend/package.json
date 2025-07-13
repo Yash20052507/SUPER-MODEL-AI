@@ -1,0 +1,107 @@
+{
+  "name": "supermodel-ai-backend",
+  "version": "1.0.0",
+  "description": "Backend API for SuperModel AI - A modular, self-evolving AI system",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "migration:generate": "typeorm migration:generate",
+    "migration:run": "typeorm migration:run",
+    "migration:revert": "typeorm migration:revert"
+  },
+  "keywords": [
+    "ai",
+    "modular",
+    "skill-packs",
+    "langchain",
+    "vector-database",
+    "rag"
+  ],
+  "author": "SuperModel AI Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0",
+    "morgan": "^1.10.0",
+    "compression": "^1.7.4",
+    "dotenv": "^16.3.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.1",
+    "joi": "^17.9.2",
+    "mongoose": "^7.3.1",
+    "pg": "^8.11.1",
+    "typeorm": "^0.3.17",
+    "redis": "^4.6.7",
+    "socket.io": "^4.7.1",
+    "winston": "^3.9.2",
+    "langchain": "^0.0.126",
+    "openai": "^3.3.0",
+    "@anthropic-ai/sdk": "^0.4.3",
+    "@pinecone-database/pinecone": "^0.1.6",
+    "@google-ai/generativelanguage": "^2.5.0",
+    "faiss-node": "^0.5.1",
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.5.1",
+    "csv-parser": "^3.0.0",
+    "multer": "^1.4.5-lts.1",
+    "sharp": "^0.32.1",
+    "cron": "^2.3.1",
+    "bull": "^4.10.4",
+    "ioredis": "^5.3.2",
+    "zod": "^3.21.4",
+    "rate-limiter-flexible": "^2.4.2",
+    "node-cache": "^5.1.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.17",
+    "@types/cors": "^2.8.13",
+    "@types/morgan": "^1.9.4",
+    "@types/compression": "^1.7.2",
+    "@types/bcryptjs": "^2.4.2",
+    "@types/jsonwebtoken": "^9.0.2",
+    "@types/node": "^20.3.1",
+    "@types/pg": "^8.10.2",
+    "@types/multer": "^1.4.7",
+    "@types/jest": "^29.5.2",
+    "@types/supertest": "^2.0.12",
+    "typescript": "^5.1.3",
+    "ts-node": "^10.9.1",
+    "ts-node-dev": "^2.0.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "supertest": "^6.3.3",
+    "eslint": "^8.43.0",
+    "@typescript-eslint/eslint-plugin": "^5.60.0",
+    "@typescript-eslint/parser": "^5.60.0",
+    "nodemon": "^2.0.22"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/src"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.ts",
+      "**/?(*.)+(spec|test).ts"
+    ],
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.d.ts",
+      "!src/types/**/*.ts"
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
